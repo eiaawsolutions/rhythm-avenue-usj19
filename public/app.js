@@ -15,7 +15,7 @@ $("#facts").innerHTML = `
   <div><h3>Costs & move-in</h3><dl>
     ${row("Rent", RM(HOUSE.rent) + " / month")}${row("Deposit", RM(HOUSE.deposit) + " (3.5 mo)")}
     ${row("Utilities", HOUSE.utilitiesIncluded)}${row("Available", HOUSE.availableFrom)}
-    ${row("Min. tenancy", HOUSE.minTenancy)}${row("Tenants", HOUSE.tenantPreference)}
+    ${row("Min. tenancy", HOUSE.minTenancy)}${row("Legal fees", "Extra (owners confirm)")}${row("Tenants", HOUSE.tenantPreference)}
   </dl></div>
   <div><h3>Building</h3><dl>
     ${row("Completed", HOUSE.building.completed)}${row("Floors", HOUSE.building.floors)}${row("Units", HOUSE.building.totalUnits.toLocaleString())}
@@ -51,13 +51,16 @@ function localAnswer(q) {
   const t = q.toLowerCase(), H = HOUSE;
   const ask = "The owners will confirm that. Send an enquiry below and they'll reply on WhatsApp.";
   const rules = [
-    [/deposit|cagaran/, () => `Deposit: ${H.depositNote}`],
-    [/rent|price|harga|sewa|how much|berapa|cost/, () => `Rent is ${RM(H.rent)} per month. The deposit is ${RM(H.deposit)} in total, which is 3.5 months' rent.`],
-    [/park|parkir|car|kereta/, () => H.parking ? `Parking: ${H.parking}.` : "Parking isn't specified in the listing. " + ask],
+    [/deposit|cagaran/, () => `Deposit: ${H.depositNote} Legal fees for the tenancy agreement are charged separately.`],
+    [/legal|stamp|agreement fee|lawyer|guaman|duti setem|other (fee|charge|cost)|extra (fee|charge|cost)|hidden/, () => `Legal fees: ${H.legalFees}`],
+    [/rent|price|harga|sewa|how much|berapa|cost/, () => `Rent is ${RM(H.rent)} per month. The deposit is ${RM(H.deposit)} in total, which is 3.5 months' rent. Legal fees for the tenancy agreement are charged separately.`],
+    [/park|parkir|car|kereta/, () => H.parking ? `Parking: ${H.parking.toLowerCase() === "not included" ? "not included with this unit." : H.parking + "."}` : "Parking isn't specified in the listing. " + ask],
     [/pet|cat|dog|kucing|anjing|haiwan/, () => unknown(H.petsAllowed) ? "The pet policy hasn't been set yet. The owners will confirm. Send an enquiry below and they'll reply on WhatsApp." : H.petsAllowed ? "Yes, pets are allowed." : "Sorry, pets are not allowed."],
-    [/bed ?room|bilik|room/, () => `There are ${H.bedrooms} bedrooms and ${H.bathrooms} bathroom. The master bedroom has an air-conditioner, a ceiling fan and wall lamps. ${H.notIncluded}`],
+    [/bed ?room|bilik|room/, () => `There are ${H.bedrooms} bedrooms and ${H.bathrooms} bathroom. The master bedroom has a king-size bed frame, an air-conditioner, a ceiling fan and wall lamps. ${H.notIncluded}`],
     [/bath|toilet|shower|heater|tandas/, () => `There is ${H.bathrooms} bathroom, with a rain shower and an electric water heater.`],
-    [/furnish|furniture|perabot|sofa|bed\b|wardrobe|almari|katil|tilam/, () => `The unit is ${H.furnishing.toLowerCase()}. The photos show: ${H.inUnit.slice(0, 5).join("; ")}. ${H.notIncluded}`],
+    [/fridge|refrigerator|peti ais|peti sejuk/, () => "Yes, a refrigerator is included."],
+    [/\bbed\b|bed ?frame|katil|mattress|tilam/, () => "The master bedroom comes with a king-size bed frame. A mattress and a bed for the second bedroom are not listed, so ask the owners if you need them."],
+    [/furnish|furniture|perabot|sofa|bed\b|wardrobe|almari|katil|tilam|fridge|refrigerator|peti/, () => `The unit is ${H.furnishing.toLowerCase()}. It comes with: ${H.inUnit.slice(0, 7).join("; ")}. ${H.notIncluded}`],
     [/air ?con|aircon|cond|fan|kipas/, () => "There's an air-conditioner in the master bedroom, plus ceiling fans in the living room and master bedroom."],
     [/wash|laundry|mesin basuh|dry/, () => "Yes. There's a Toshiba top-load washing machine in the utility yard, plus a ceiling clothes-drying rack."],
     [/cook|kitchen|masak|dapur/, () => "Cooking is allowed. The kitchen has a sink, tiled worktops, a dish rack and louvre windows."],
@@ -66,7 +69,7 @@ function localAnswer(q) {
     [/size|sq|square|luas|keluasan/, () => `The listed size is ${H.sizeSqft} sq ft.`],
     [/floor|tingkat|level|high/, () => `The unit is on a ${H.floorRange.toLowerCase()} of a ${H.building.floors}-floor building completed in ${H.building.completed}.`],
     [/avail|move|pindah|when|bila|start/, () => H.availableFrom ? `It's available from ${H.availableFrom}.` : "Move-in date is flexible. " + ask],
-    [/tenancy|contract|kontrak|how long|lease|year|tahun/, () => H.minTenancy ? `The minimum tenancy is ${H.minTenancy}.` : ask],
+    [/tenancy|contract|kontrak|how long|lease|year|tahun|minimum/, () => H.minTenancy ? `The minimum tenancy is ${H.minTenancy}. Legal fees for the tenancy agreement are charged separately.` : ask],
     [/utilit|electric|water|wifi|internet|tnb|air\b|elektrik/, () => H.utilitiesIncluded ? `Utilities: ${H.utilitiesIncluded}.` : ask],
     [/where|location|address|lokasi|alamat|area/, () => `${H.address}. The building is near KTM/LRT.`],
     [/view|visit|lawat|tengok|appointment/, () => H.viewing],

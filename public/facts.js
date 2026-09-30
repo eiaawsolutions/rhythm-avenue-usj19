@@ -10,9 +10,9 @@ export const HOUSE = {
   ownerWhatsApp: "60XXXXXXXXX",          // e.g. "60123456789" – no +, no dashes
   ownerDisplayName: "The owners (Amos & wife)",
   availableFrom: null,                   // e.g. "1 November 2026"
-  minTenancy: null,                      // e.g. "12 months"
-  petsAllowed: null,                     // true / false / null
-  parking: null,                         // e.g. "1 covered bay included"
+  minTenancy: "1 year",
+  petsAllowed: false,
+  parking: "Not included",
   utilitiesIncluded: null,               // e.g. "Not included – tenant pays TNB, water, internet"
   tenantPreference: "Malaysian citizens",
   viewing: "By appointment – send an enquiry and the owners will arrange a time.",
@@ -24,6 +24,7 @@ export const HOUSE = {
   rent: 1500,
   deposit: 5250,                         // RM – 3.5 months' rent in total
   depositNote: "RM 5,250 in total (equal to 3.5 months' rent). The owners will confirm the split between security and utility deposit.",
+  legalFees: "Extra charge on top of rent and deposit, for preparing the tenancy agreement. The owners will confirm the amount.",
   propertyType: "Apartment",
   furnishing: "Partially furnished",
   bedrooms: 2,
@@ -35,8 +36,10 @@ export const HOUSE = {
                "Jogging track", "Playground", "Minimart", "Multipurpose hall"],
   amenities: ["Air-conditioning", "Cooking allowed", "Near KTM/LRT", "Washing machine"],
 
-  // ---- What is visible in the photos ----
+  // ---- What comes with the unit (photos + owner) ----
   inUnit: [
+    "Refrigerator",
+    "King-size bed frame in the master bedroom",
     "Grey fabric L-shaped sofa with adjustable headrests",
     "White TV console",
     "White dining table with 2 chairs",
@@ -51,7 +54,7 @@ export const HOUSE = {
     "Bathroom with rain shower and electric water heater",
     "Tiled floors throughout; teal feature walls; grilled windows",
   ],
-  notIncluded: "Beds, mattresses and wardrobes are not shown in the photos — ask the owners what is provided.",
+  notIncluded: "A mattress, a bed for the second bedroom and wardrobes are not listed. Ask the owners if you need them.",
 };
 
 export const FORM_FIELDS = [
@@ -78,6 +81,7 @@ export function factSheet(h = HOUSE) {
     `Size: ${h.sizeSqft} sq ft`,
     `Rent: RM ${h.rent.toLocaleString("en-MY")} per month`,
     `Deposit: ${h.depositNote}`,
+    `Legal fees: ${h.legalFees}`,
     `Building: completed ${h.building.completed}, ${h.building.floors} floors, ${h.building.totalUnits} units`,
     `Facilities: ${h.facilities.join(", ")}`,
     `Amenities: ${h.amenities.join(", ")}`,
