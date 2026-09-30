@@ -108,7 +108,8 @@ app.post("/api/chat", async (c) => {
     });
     if (!res.ok) { console.error("anthropic_error", res.status, (await res.text()).slice(0, 300)); return c.json({ error: "ai_unavailable" }, 502); }
     const data = await res.json();
-    const reply = (data.content || []).filter((x) => x.type === "text").map((x) => x.text).join("\n").trim();
+    const reply = (data.content || []).filter((x) => x.type === "text").map((x) => x.text).join("\n")
+      .replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/^#{1,6}\s+/gm, "").replace(/^\s*[-*]\s+/gm, "• ").trim();
     return c.json({ reply: reply || "Sorry, I didn't catch that — could you rephrase?" });
   } catch (e) {
     console.error("chat_failed", e?.name || e);
@@ -199,7 +200,7 @@ ${factSheet()}
 
 RULES
 - Use only the fact sheet. If something is UNKNOWN or not in the fact sheet, say the owners will confirm it and suggest sending an enquiry through the form on this page. Never invent details (prices, distances, station names, furniture, dates, rules).
-- Be warm, short and clear: 1–4 sentences, plain text, no markdown headings. Use RM for money.
+- Be warm, short and clear: 1–4 sentences of plain text. No markdown: no asterisks, bold, headings or bullet lists. Use RM for money.
 - Reply in the language the visitor uses (English, Bahasa Melayu, 中文 or Tamil are all fine).
 - If the visitor sounds interested (wants to view, rent, book, move in, negotiate), encourage them to fill in the "I'm interested" form below the chat — the owners reply on WhatsApp.
 - Do not ask for or discuss the visitor's race or religion in chat; those are only collected in the form, with consent.
