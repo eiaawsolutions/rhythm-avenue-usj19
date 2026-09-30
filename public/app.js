@@ -9,7 +9,7 @@ const row = (k, v) => `<dt>${k}</dt><dd>${unknown(v) ? '<span class="pending">As
 $("#facts").innerHTML = `
   <div><h3>The unit</h3><dl>
     ${row("Type", HOUSE.propertyType)}${row("Bedrooms", HOUSE.bedrooms)}${row("Bathroom", HOUSE.bathrooms)}
-    ${row("Size", HOUSE.sizeSqft + " sq ft")}${row("Floor", HOUSE.floorRange)}${row("Furnishing", HOUSE.furnishing)}
+    ${row("Size", HOUSE.sizeSqft + " sq ft")}${row("Floor", HOUSE.unitFloor + "th (high floor)")}${row("Furnishing", HOUSE.furnishing)}
     ${row("Parking", HOUSE.parking)}${row("Pets", unknown(HOUSE.petsAllowed) ? null : HOUSE.petsAllowed ? "Allowed" : "Not allowed")}
   </dl></div>
   <div><h3>Costs & move-in</h3><dl>
@@ -67,7 +67,7 @@ function localAnswer(q) {
     [/pool|gym|facilit|kemudahan|sauna|squash|security|guard|pengawal|playground/, () => `Facilities: ${H.facilities.join(", ")}.`],
     [/lrt|ktm|mrt|train|transport|bus|station|tren/, () => "The listing says the building is near KTM/LRT. The owners can share the exact route when you arrange a viewing."],
     [/size|sq|square|luas|keluasan/, () => `The listed size is ${H.sizeSqft} sq ft.`],
-    [/floor|tingkat|level|high/, () => `The unit is on a ${H.floorRange.toLowerCase()} of a ${H.building.floors}-floor building completed in ${H.building.completed}.`],
+    [/floor|tingkat|level|high/, () => `The unit is on the ${H.unitFloor}th floor of a ${H.building.floors}-storey building completed in ${H.building.completed}.`],
     [/avail|move|pindah|when|bila|start|kosong|ready/, () => H.availableFrom ? "It's available now and ready for immediate occupation." : "Move-in date is flexible. " + ask],
     [/tenancy|contract|kontrak|how long|lease|year|tahun|minimum/, () => H.minTenancy ? `The minimum tenancy is ${H.minTenancy}. Legal fees for the tenancy agreement are charged separately.` : ask],
     [/utilit|electric|water|wifi|internet|tnb|air\b|elektrik|indah|bill|bil/, () => H.utilitiesIncluded ? `Utilities are ${H.utilitiesIncluded.charAt(0).toLowerCase() + H.utilitiesIncluded.slice(1)}. They are not included in the rent.` : ask],

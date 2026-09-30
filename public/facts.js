@@ -30,8 +30,9 @@ export const HOUSE = {
   bedrooms: 2,
   bathrooms: 1,
   floorRange: "High floor",
+  unitFloor: 29,
   sizeSqft: 649,                         // confirmed by owner
-  building: { completed: 2008, floors: 20, totalUnits: 1036 },
+  building: { completed: 2008, floors: 31, totalUnits: 1036 },
   facilities: ["24-hour security", "Lift", "Swimming pool", "Gymnasium", "Sauna", "Squash court",
                "Jogging track", "Playground", "Minimart", "Multipurpose hall"],
   amenities: ["Air-conditioning", "Cooking allowed", "Near KTM/LRT", "Washing machine"],
@@ -77,7 +78,7 @@ export function factSheet(h = HOUSE) {
   const u = (v) => (v === null || v === undefined ? "UNKNOWN – owner will confirm" : v);
   return [
     `Property: ${h.title} — ${h.address}`,
-    `Type: ${h.propertyType}, ${h.furnishing}, ${h.bedrooms} bedrooms, ${h.bathrooms} bathroom, ${h.floorRange}`,
+    `Type: ${h.propertyType}, ${h.furnishing}, ${h.bedrooms} bedrooms, ${h.bathrooms} bathroom, ${h.floorRange} (floor ${h.unitFloor} of ${h.building.floors})`,
     `Size: ${h.sizeSqft} sq ft`,
     `Rent: RM ${h.rent.toLocaleString("en-MY")} per month`,
     `Deposit: ${h.depositNote}`,
