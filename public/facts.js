@@ -9,11 +9,11 @@ export const HOUSE = {
   // ---- Owner settings (EDIT THESE) ----
   ownerWhatsApp: "60XXXXXXXXX",          // e.g. "60123456789" – no +, no dashes
   ownerDisplayName: "The owners (Amos & wife)",
-  availableFrom: null,                   // e.g. "1 November 2026"
+  availableFrom: "Immediately (ready for immediate occupation)",
   minTenancy: "1 year",
   petsAllowed: false,
   parking: "Not included",
-  utilitiesIncluded: null,               // e.g. "Not included – tenant pays TNB, water, internet"
+  utilitiesIncluded: "Paid by the tenant: electricity (TNB), water, Indah Water sewerage and other utility bills",
   tenantPreference: "Malaysian citizens",
   viewing: "By appointment – send an enquiry and the owners will arrange a time.",
 

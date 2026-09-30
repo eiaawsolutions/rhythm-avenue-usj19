@@ -14,7 +14,7 @@ $("#facts").innerHTML = `
   </dl></div>
   <div><h3>Costs & move-in</h3><dl>
     ${row("Rent", RM(HOUSE.rent) + " / month")}${row("Deposit", RM(HOUSE.deposit) + " (3.5 mo)")}
-    ${row("Utilities", HOUSE.utilitiesIncluded)}${row("Available", HOUSE.availableFrom)}
+    ${row("Utilities", HOUSE.utilitiesIncluded ? "Tenant pays" : null)}${row("Available", HOUSE.availableFrom ? "Immediately" : null)}
     ${row("Min. tenancy", HOUSE.minTenancy)}${row("Legal fees", "Extra (owners confirm)")}${row("Tenants", HOUSE.tenantPreference)}
   </dl></div>
   <div><h3>Building</h3><dl>
@@ -68,9 +68,9 @@ function localAnswer(q) {
     [/lrt|ktm|mrt|train|transport|bus|station|tren/, () => "The listing says the building is near KTM/LRT. The owners can share the exact route when you arrange a viewing."],
     [/size|sq|square|luas|keluasan/, () => `The listed size is ${H.sizeSqft} sq ft.`],
     [/floor|tingkat|level|high/, () => `The unit is on a ${H.floorRange.toLowerCase()} of a ${H.building.floors}-floor building completed in ${H.building.completed}.`],
-    [/avail|move|pindah|when|bila|start/, () => H.availableFrom ? `It's available from ${H.availableFrom}.` : "Move-in date is flexible. " + ask],
+    [/avail|move|pindah|when|bila|start|kosong|ready/, () => H.availableFrom ? "It's available now and ready for immediate occupation." : "Move-in date is flexible. " + ask],
     [/tenancy|contract|kontrak|how long|lease|year|tahun|minimum/, () => H.minTenancy ? `The minimum tenancy is ${H.minTenancy}. Legal fees for the tenancy agreement are charged separately.` : ask],
-    [/utilit|electric|water|wifi|internet|tnb|air\b|elektrik/, () => H.utilitiesIncluded ? `Utilities: ${H.utilitiesIncluded}.` : ask],
+    [/utilit|electric|water|wifi|internet|tnb|air\b|elektrik|indah|bill|bil/, () => H.utilitiesIncluded ? `Utilities are ${H.utilitiesIncluded.charAt(0).toLowerCase() + H.utilitiesIncluded.slice(1)}. They are not included in the rent.` : ask],
     [/where|location|address|lokasi|alamat|area/, () => `${H.address}. The building is near KTM/LRT.`],
     [/view|visit|lawat|tengok|appointment/, () => H.viewing],
     [/foreign|nationality|warganegara|citizen/, () => `The owners are looking for ${H.tenantPreference}.`],
