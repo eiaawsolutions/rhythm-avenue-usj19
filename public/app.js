@@ -155,23 +155,34 @@ $("#enqForm").addEventListener("submit", async (e) => {
 });
 
 /* ---------- sharing ---------- */
-const url = location.origin + location.pathname;
-const shareMsg = "2-bedroom for rent at Rhythm Avenue USJ19, Subang Jaya: RM1,500/month, high floor, pool & gym. Ask the AI anything:";
+const url = location.origin + "/";
+const shareTitle = "🏠 For Rent: Rhythm Avenue USJ19, Subang Jaya";
+const shareBody = [
+  shareTitle,
+  `💰 ${RM(HOUSE.rent)}/month · Available now`,
+  `🛏 ${HOUSE.bedrooms} bed · ${HOUSE.bathrooms} bath · ${HOUSE.sizeSqft} sq ft · ${HOUSE.unitFloor}th floor`,
+  "🛋 Partially furnished: sofa, dining set, fridge, king bed frame, washing machine, air-con",
+  "🏊 Pool · gym · sauna · 24h security · near KTM/LRT",
+  "",
+  "📸 Photos, full details & ask our AI assistant anything:",
+].join("\n");
+const fullPost = `${shareBody}\n${url}`;
 const enc = encodeURIComponent;
 const links = [
-  ["WhatsApp", `https://wa.me/?text=${enc(shareMsg + " " + url)}`],
+  ["WhatsApp", `https://wa.me/?text=${enc(fullPost)}`],
   ["Facebook", `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`],
-  ["Telegram", `https://t.me/share/url?url=${enc(url)}&text=${enc(shareMsg)}`],
-  ["X", `https://twitter.com/intent/tweet?text=${enc(shareMsg)}&url=${enc(url)}`],
+  ["Telegram", `https://t.me/share/url?url=${enc(url)}&text=${enc(shareBody)}`],
+  ["X", `https://twitter.com/intent/tweet?text=${enc(shareTitle + " · " + RM(HOUSE.rent) + "/month · Available now")}&url=${enc(url)}`],
   ["LinkedIn", `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`],
 ];
 const sr = $("#shareRow");
 links.forEach(([n, h]) => { const a = document.createElement("a"); a.href = h; a.target = "_blank"; a.rel = "noopener"; a.textContent = n; sr.appendChild(a); });
-const copy = document.createElement("button"); copy.type = "button"; copy.textContent = "Copy link";
-copy.onclick = async () => { try { await navigator.clipboard.writeText(url); copy.textContent = "Link copied ✓"; } catch { prompt("Copy this link:", url); } setTimeout(() => (copy.textContent = "Copy link"), 2000); };
+const copy = document.createElement("button"); copy.type = "button"; copy.textContent = "Copy post";
+copy.onclick = async () => { try { await navigator.clipboard.writeText(fullPost); copy.textContent = "Post copied ✓"; } catch { prompt("Copy this post:", fullPost); } setTimeout(() => (copy.textContent = "Copy post"), 2000); };
 sr.appendChild(copy);
+$("#pcHost").textContent = location.host;
 document.querySelectorAll("[data-share]").forEach((b) => b.addEventListener("click", async () => {
-  if (navigator.share) { try { await navigator.share({ title: document.title, text: shareMsg, url }); } catch {} }
+  if (navigator.share) { try { await navigator.share({ title: shareTitle, text: shareBody, url }); } catch {} }
   else $("#share").scrollIntoView({ behavior: "smooth" });
 }));
 

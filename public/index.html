@@ -4,23 +4,26 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Rhythm Avenue USJ19 – 2-Bedroom for Rent, RM1,500</title>
-<meta name="description" content="High-floor 2-bedroom apartment for rent at Rhythm Avenue, USJ 19, Subang Jaya. RM1,500/month, partially furnished, pool, gym, 24h security. Ask our AI assistant anything and enquire in 1 minute.">
+<meta name="description" content="2-bedroom apartment for rent at Rhythm Avenue, USJ 19, Subang Jaya. RM1,500/month, 649 sq ft, 29th floor, available now, partially furnished, pool, gym, 24h security. Ask our AI assistant anything and enquire in 1 minute.">
 <link rel="canonical" href="https://rhythm-avenue-usj19.pages.dev/">
 <!-- Social sharing (Facebook, WhatsApp, Telegram, LinkedIn, X). Replace the domain if you use a custom one. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Rhythm Avenue USJ19 – For Rent">
-<meta property="og:title" content="For Rent: Rhythm Avenue USJ19 · 2 Bed · RM1,500/month">
-<meta property="og:description" content="Available now. High floor, partially furnished, pool & gym, near KTM/LRT. Ask our AI anything about the unit, then enquire in 1 minute.">
+<meta property="og:title" content="🏠 For Rent: Rhythm Avenue USJ19, Subang Jaya · RM1,500/month">
+<meta property="og:description" content="Available now · 2 bed, 1 bath, 649 sq ft on the 29th floor · Partially furnished with fridge & king bed frame · Pool, gym, 24h security · Near KTM/LRT. Ask our AI assistant anything, then enquire in 1 minute.">
 <meta property="og:url" content="https://rhythm-avenue-usj19.pages.dev/">
-<meta property="og:image" content="https://rhythm-avenue-usj19.pages.dev/og.jpg">
+<meta property="og:image" content="https://rhythm-avenue-usj19.pages.dev/og.jpg?v=2">
+<meta property="og:image:secure_url" content="https://rhythm-avenue-usj19.pages.dev/og.jpg?v=2">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Living room of the Rhythm Avenue USJ19 unit, RM1,500 per month">
 <meta property="og:locale" content="en_MY">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="For Rent: Rhythm Avenue USJ19 · 2 Bed · RM1,500/month">
-<meta name="twitter:description" content="High floor, partially furnished, pool & gym, near KTM/LRT. Ask our AI, then enquire.">
-<meta name="twitter:image" content="https://rhythm-avenue-usj19.pages.dev/og.jpg">
+<meta name="twitter:title" content="🏠 For Rent: Rhythm Avenue USJ19, Subang Jaya · RM1,500/month">
+<meta name="twitter:description" content="Available now · 2 bed, 1 bath, 649 sq ft on the 29th floor · Partially furnished with fridge & king bed frame · Pool, gym, 24h security · Near KTM/LRT. Ask our AI assistant anything, then enquire in 1 minute.">
+<meta name="twitter:image" content="https://rhythm-avenue-usj19.pages.dev/og.jpg?v=2">
+<meta name="twitter:image:alt" content="Rhythm Avenue USJ19 unit for rent, RM1,500 per month">
 <meta name="theme-color" content="#16302d">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2316302d'/%3E%3Cpath d='M14 34 32 18l18 16v14H38V38H26v10H14z' fill='%231fb3a8'/%3E%3C/svg%3E">
 <script type="application/ld+json">
@@ -166,6 +169,16 @@ form.card{background:var(--card);border:1px solid var(--line);border-radius:24px
 .share{display:flex;flex-wrap:wrap;gap:10px}
 .share a,.share button{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:0 18px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);text-decoration:none;color:var(--ink);font-weight:600;font-size:14.5px;cursor:pointer}
 .share a:hover,.share button:hover{border-color:var(--teal)}
+.share-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}
+.preview-card{display:block;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card);text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .2s}
+.preview-card:hover{transform:translateY(-2px)}
+.preview-card img{width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover}
+.pc-body{display:flex;flex-direction:column;gap:4px;padding:12px 16px 16px}
+.pc-host{font-size:12px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em}
+.pc-body b{font-size:16px;line-height:1.35}
+.pc-desc{font-size:14px;color:var(--ink-2)}
+.share-note{font-size:13px;color:var(--ink-2);margin:14px 0 0}
+@media (max-width:860px){.share-grid{grid-template-columns:1fr}}
 footer{padding:28px 0 90px;font-size:13px;color:var(--ink-2);border-top:1px solid var(--line)}
 
 /* mobile sticky bar */
@@ -299,8 +312,21 @@ footer{padding:28px 0 90px;font-size:13px;color:var(--ink-2);border-top:1px soli
 
   <section id="share">
     <div class="wrap">
-      <div class="sec-head"><div><div class="eyebrow">Know someone looking?</div><h2>Share this home</h2></div></div>
-      <div class="share" id="shareRow"></div>
+      <div class="sec-head"><div><div class="eyebrow">Know someone looking?</div><h2>Share this home</h2></div><p>This is how the post looks when you share it. Tapping it opens this page.</p></div>
+      <div class="share-grid">
+        <a class="preview-card" id="previewCard" href="./" aria-label="Preview of the shared post">
+          <img src="og.jpg?v=2" alt="Share image: Rhythm Avenue USJ19, RM1,500 per month, available now" loading="lazy" width="1200" height="630">
+          <span class="pc-body">
+            <span class="pc-host" id="pcHost">rhythm-avenue-usj19</span>
+            <b>🏠 For Rent: Rhythm Avenue USJ19, Subang Jaya · RM1,500/month</b>
+            <span class="pc-desc">Available now · 2 bed, 1 bath, 649 sq ft on the 29th floor · Pool, gym, 24h security · Near KTM/LRT.</span>
+          </span>
+        </a>
+        <div>
+          <div class="share" id="shareRow"></div>
+          <p class="share-note">WhatsApp, Telegram and "Copy post" send the full description with the link. Facebook, X and LinkedIn show the picture card above.</p>
+        </div>
+      </div>
     </div>
   </section>
 </main>
