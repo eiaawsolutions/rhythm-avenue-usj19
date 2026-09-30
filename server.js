@@ -64,8 +64,11 @@ function siteUrl(c) {
 /* ---------------- app ---------------- */
 const app = new Hono();
 
+const BOT_RE = /facebookexternalhit|facebookcatalog|meta-externalagent|Threads|Instagram|WhatsApp|Twitterbot|LinkedInBot|TelegramBot|Slackbot|Discordbot|Googlebot|bingbot/i;
 app.use("*", async (c, next) => {
+  const ua = c.req.header("user-agent") || "";
   await next();
+  if (BOT_RE.test(ua)) console.log("crawler", c.res.status, c.req.method, c.req.path, ua.slice(0, 80));
   c.header("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
   c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   c.header("X-Content-Type-Options", "nosniff");
