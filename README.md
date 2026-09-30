@@ -15,6 +15,9 @@ A one-page rental listing with an AI chat that answers only from the house facts
    | `ANTHROPIC_API_KEY` | your key from console.anthropic.com (the chat falls back to built-in answers without it) |
    | `AI_MODEL` | optional, default `claude-haiku-4-5` |
    | `PUBLIC_URL` | optional, e.g. `https://rent.eiaawsolutions.com` once a custom domain is added |
+   | `RESEND_API_KEY` | emails each enquiry (from Infisical) |
+   | `NOTIFY_EMAIL` | recipient(s), comma-separated; default `eiaawsolutions@gmail.com` |
+   | `EMAIL_FROM` | optional sender on a Resend-verified domain, e.g. `Rhythm Avenue <rent@eiaawsolutions.com>` (default `onboarding@resend.dev` only delivers to the Resend account owner's address) |
    | `NOTIFY_WEBHOOK_URL` / `NOTIFY_WEBHOOK_SECRET` | optional: an n8n webhook that alerts you on each enquiry |
 4. Web service → **Settings → Networking → Generate Domain** (or add a custom domain)
 5. After it deploys, open `/healthz`. It should return `ok`.

@@ -141,6 +141,7 @@ app.post("/api/enquiry", async (c) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,now())`,
       [id, d.name, d.nationality, d.race, d.religion, occ, d.relation, d.occupation, d.pets, d.duration, d.moveIn, d.budget, d.phone]);
   }
+  sendEnquiryEmail(id, d).catch((e) => console.error("email_failed", e?.message));
   if (process.env.NOTIFY_WEBHOOK_URL) {
     fetch(process.env.NOTIFY_WEBHOOK_URL, {
       method: "POST",
@@ -157,6 +158,37 @@ app.all("/api/*", (c) => c.json({ error: "not_found" }, 404));
 app.use("/img/*", async (c, next) => { await next(); c.header("Cache-Control", "public, max-age=604800"); });
 app.use("*", serveStatic({ root: "./public" }));
 app.notFound((c) => c.redirect("/", 302));
+
+/* ---------------- enquiry email (Resend) ---------------- */
+const esc = (v) => String(v).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
+async function sendEnquiryEmail(id, d) {
+  if (!process.env.RESEND_API_KEY) return console.warn("RESEND_API_KEY not set – enquiry email skipped");
+  const to = (process.env.NOTIFY_EMAIL || "eiaawsolutions@gmail.com").split(",").map((s) => s.trim()).filter(Boolean);
+  const rows = FORM_FIELDS.map((f) => [f.label, d[f.id]]);
+  const waDigits = d.phone.replace(/\D/g, "").replace(/^0/, "60");
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px">
+    <h2 style="margin:0 0 4px">New rental enquiry</h2>
+    <p style="margin:0 0 16px;color:#555">${esc(HOUSE.title)} · RM ${HOUSE.rent.toLocaleString("en-MY")}/month</p>
+    <table cellpadding="8" style="border-collapse:collapse;width:100%;font-size:14px">
+      ${rows.map(([k, v]) => `<tr><td style="border-bottom:1px solid #eee;color:#555;width:45%">${esc(k)}</td><td style="border-bottom:1px solid #eee"><b>${esc(v)}</b></td></tr>`).join("")}
+    </table>
+    <p style="margin:20px 0"><a href="https://wa.me/${waDigits}" style="background:#25d366;color:#062b14;padding:12px 18px;border-radius:24px;text-decoration:none;font-weight:bold">Reply on WhatsApp</a></p>
+    <p style="color:#888;font-size:12px">Ref ${id}. The applicant consented to the collection of these details under PDPA 2010, for this tenancy only.</p></div>`;
+  const text = rows.map(([k, v]) => `${k}: ${v}`).join("\n") + `\n\nWhatsApp: https://wa.me/${waDigits}\nRef: ${id}`;
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    signal: AbortSignal.timeout(15000),
+    headers: { "content-type": "application/json", authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Idempotency-Key": id },
+    body: JSON.stringify({
+      from: process.env.EMAIL_FROM || "Rhythm Avenue Enquiries <onboarding@resend.dev>",
+      to,
+      subject: `New enquiry: ${d.name} – ${HOUSE.title} (move-in ${d.moveIn})`,
+      html, text,
+    }),
+  });
+  if (!res.ok) throw new Error(`resend ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  console.log("enquiry_emailed", id);
+}
 
 /* ---------------- AI system prompt ---------------- */
 const SYSTEM = `You are the friendly rental assistant for one apartment unit listed for rent in Malaysia.
