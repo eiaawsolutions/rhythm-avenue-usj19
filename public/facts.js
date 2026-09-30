@@ -29,7 +29,7 @@ export const HOUSE = {
   bedrooms: 2,
   bathrooms: 1,
   floorRange: "High floor",
-  sizeSqft: 430,                         // as listed on Mudah – verify
+  sizeSqft: 649,                         // confirmed by owner
   building: { completed: 2008, floors: 20, totalUnits: 1036 },
   facilities: ["24-hour security", "Lift", "Swimming pool", "Gymnasium", "Sauna", "Squash court",
                "Jogging track", "Playground", "Minimart", "Multipurpose hall"],
@@ -75,7 +75,7 @@ export function factSheet(h = HOUSE) {
   return [
     `Property: ${h.title} — ${h.address}`,
     `Type: ${h.propertyType}, ${h.furnishing}, ${h.bedrooms} bedrooms, ${h.bathrooms} bathroom, ${h.floorRange}`,
-    `Size: ${h.sizeSqft} sq ft (as listed)`,
+    `Size: ${h.sizeSqft} sq ft`,
     `Rent: RM ${h.rent.toLocaleString("en-MY")} per month`,
     `Deposit: ${h.depositNote}`,
     `Building: completed ${h.building.completed}, ${h.building.floors} floors, ${h.building.totalUnits} units`,
