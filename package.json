@@ -1,0 +1,17 @@
+{
+  "name": "rhythm-avenue-usj19",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Rhythm Avenue USJ19 rental site with AI assistant and enquiry form",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "@hono/node-server": "2.1.3",
+    "hono": "4.13.12",
+    "pg": "8.23.0"
+  }
+}
