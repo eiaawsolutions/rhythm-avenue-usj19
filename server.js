@@ -77,6 +77,17 @@ app.use("*", async (c, next) => {
 
 app.get("/healthz", (c) => c.text("ok"));
 
+// Crawlers (Meta/Threads/Instagram, WhatsApp, Google) check these before building link previews
+app.get("/robots.txt", (c) => {
+  c.header("Cache-Control", "public, max-age=3600");
+  return c.text(`User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${siteUrl(c)}/sitemap.xml\n`);
+});
+app.get("/sitemap.xml", (c) => {
+  c.header("Content-Type", "application/xml; charset=utf-8");
+  return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${siteUrl(c)}/</loc><changefreq>weekly</changefreq></url></urlset>\n`);
+});
+app.get("/favicon.ico", (c) => c.redirect("/og.jpg?v=2", 302));
+
 // index.html with share-link URLs filled in for whatever domain serves it
 const indexTpl = await readFile(new URL("./public/index.html", import.meta.url), "utf8");
 const renderIndex = (c) => {
