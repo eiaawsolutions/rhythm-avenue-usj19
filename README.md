@@ -49,3 +49,10 @@ Strict CSP and HSTS, same-origin check on the API, honeypot on the form, rate li
 npm install
 DATABASE_URL=postgres://... ANTHROPIC_API_KEY=... npm run dev   # http://localhost:3000
 ```
+
+## SEO / GEO / AEO
+- All listing facts, the neighbourhood guide, the FAQ and BM/Chinese summaries are **rendered on the server** (`seo.js`), so search engines and AI crawlers that don't run JavaScript still read them.
+- Structured data (`@graph`): WebSite, WebPage, RealEstateListing + Offer (MYR, monthly), Apartment, ApartmentComplex, FAQPage. Everything is generated from `public/facts.js`.
+- `/robots.txt` explicitly allows search and AI crawlers. `/sitemap.xml` includes image entries. `/llms.txt` gives AI assistants a plain-text fact sheet.
+- **IndexNow:** on every deploy the server pings Bing/IndexNow (key file at `/<key>.txt`). Google uses the sitemap and Search Console instead.
+- The Railway default domain returns a 301 to `PUBLIC_URL`, so there is a single canonical host.

@@ -6,7 +6,7 @@ const unknown = (v) => v === null || v === undefined;
 
 /* ---------- facts ---------- */
 const row = (k, v) => `<dt>${k}</dt><dd>${unknown(v) ? '<span class="pending">Ask owners</span>' : v}</dd>`;
-$("#facts").innerHTML = `
+if (!$("#facts").children.length) $("#facts").innerHTML = `
   <div><h3>The unit</h3><dl>
     ${row("Type", HOUSE.propertyType)}${row("Bedrooms", HOUSE.bedrooms)}${row("Bathroom", HOUSE.bathrooms)}
     ${row("Size", HOUSE.sizeSqft + " sq ft")}${row("Floor", HOUSE.unitFloor + "th (high floor)")}${row("Furnishing", HOUSE.furnishing)}
@@ -65,13 +65,13 @@ function localAnswer(q) {
     [/wash|laundry|mesin basuh|dry/, () => "Yes. There's a Toshiba top-load washing machine in the utility yard, plus a ceiling clothes-drying rack."],
     [/cook|kitchen|masak|dapur/, () => "Cooking is allowed. The kitchen has a sink, tiled worktops, a dish rack and louvre windows."],
     [/pool|gym|facilit|kemudahan|sauna|squash|security|guard|pengawal|playground/, () => `Facilities: ${H.facilities.join(", ")}.`],
-    [/lrt|ktm|mrt|train|transport|bus|station|tren/, () => "The listing says the building is near KTM/LRT. The owners can share the exact route when you arrange a viewing."],
+    [/lrt|ktm|mrt|train|transport|bus|station|tren/, () => `${H.neighbourhood.transit[0]}. ${H.neighbourhood.transit[1]}.`],
     [/size|sq|square|luas|keluasan/, () => `The listed size is ${H.sizeSqft} sq ft.`],
     [/floor|tingkat|level|high/, () => `The unit is on the ${H.unitFloor}th floor of a ${H.building.floors}-storey building completed in ${H.building.completed}.`],
     [/avail|move|pindah|when|bila|start|kosong|ready/, () => H.availableFrom ? "It's available now and ready for immediate occupation." : "Move-in date is flexible. " + ask],
     [/tenancy|contract|kontrak|how long|lease|year|tahun|minimum/, () => H.minTenancy ? `The minimum tenancy is ${H.minTenancy}. Legal fees for the tenancy agreement are charged separately.` : ask],
     [/utilit|electric|water|wifi|internet|tnb|air\b|elektrik|indah|bill|bil/, () => H.utilitiesIncluded ? `Utilities are ${H.utilitiesIncluded.charAt(0).toLowerCase() + H.utilitiesIncluded.slice(1)}. They are not included in the rent.` : ask],
-    [/where|location|address|lokasi|alamat|area/, () => `${H.address}. The building is near KTM/LRT.`],
+    [/where|location|address|lokasi|alamat|area|near|dekat|mall|school|sekolah/, () => `${H.address} ${H.postcode}. 19 USJ City Mall is right next door and Wawasan LRT is a short walk away. Schools within about 1 km: ${H.neighbourhood.schools.slice(0,3).join(", ")}.`],
     [/view|visit|lawat|tengok|appointment/, () => H.viewing],
     [/foreign|nationality|warganegara|citizen/, () => `The owners are looking for ${H.tenantPreference}.`],
     [/^(hi|hello|hey|salam|assalam|hai)\b/, () => "Hi! Ask me anything about the unit: rent, rooms, facilities or move-in."],
@@ -162,7 +162,8 @@ const shareBody = [
   `💰 ${RM(HOUSE.rent)}/month · Available now`,
   `🛏 ${HOUSE.bedrooms} bed · ${HOUSE.bathrooms} bath · ${HOUSE.sizeSqft} sq ft · ${HOUSE.unitFloor}th floor`,
   "🛋 Partially furnished: sofa, dining set, fridge, king bed frame, washing machine, air-con",
-  "🏊 Pool · gym · sauna · 24h security · near KTM/LRT",
+  "🚆 Walk to Wawasan LRT & 19 USJ City Mall",
+  "🏊 Pool · gym · sauna · 24h security",
   "",
   "📸 Photos, full details & ask our AI assistant anything:",
 ].join("\n");

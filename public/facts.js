@@ -32,10 +32,11 @@ export const HOUSE = {
   floorRange: "High floor",
   unitFloor: 29,
   sizeSqft: 649,                         // confirmed by owner
-  building: { completed: 2008, floors: 31, totalUnits: 1036 },
+  postcode: "47630",
+  building: { completed: 2008, floors: 31, totalUnits: 1036, blocks: 4, tenure: "Freehold", developer: "Sanjung Utama", type: "Serviced apartment" },
   facilities: ["24-hour security", "Lift", "Swimming pool", "Gymnasium", "Sauna", "Squash court",
                "Jogging track", "Playground", "Minimart", "Multipurpose hall"],
-  amenities: ["Air-conditioning", "Cooking allowed", "Near KTM/LRT", "Washing machine"],
+  amenities: ["Air-conditioning", "Cooking allowed", "Near Wawasan LRT (Kelana Jaya Line)", "Washing machine"],
 
   // ---- What comes with the unit (photos + owner) ----
   inUnit: [
@@ -55,6 +56,19 @@ export const HOUSE = {
     "Bathroom with rain shower and electric water heater",
     "Tiled floors throughout; teal feature walls; grilled windows",
   ],
+  // ---- Neighbourhood (public sources: Wikipedia, iProperty, StarProperty, EdgeProp — distances approximate) ----
+  neighbourhood: {
+    transit: [
+      "Wawasan LRT station (Kelana Jaya Line, KJ33) – a short walk away, beside 19 USJ City Mall",
+      "USJ 21 LRT station (KJ34) and Taipan LRT station (KJ32) – one stop either way on the Kelana Jaya Line",
+      "Bus routes 770, 771 and SA08 nearby",
+    ],
+    shopping: ["19 USJ City Mall – right next to the building", "Main Place Mall USJ 21", "One City USJ 25", "Summit USJ", "Sunway Pyramid", "Subang Parade", "Empire Subang", "Mydin USJ"],
+    schools: ["SJK(T) Tun Sambanthan (about 600 m)", "SK Dato' Onn Jaafar (about 700 m)", "SJK(C) Tun Tan Cheng Lock (about 800 m)", "Monash University Malaysia (about 7 km)"],
+    healthcare: ["Subang Jaya Medical Centre", "Sunway Medical Centre", "Columbia Asia Hospital Puchong (about 6 km)"],
+    roads: ["KESAS Highway", "LDP (Damansara–Puchong Expressway)", "Federal Highway", "NPE", "NKVE"],
+    business: ["USJ Taipan commercial centre (about 5 minutes' drive)", "Subang Business Centre USJ 9"],
+  },
   notIncluded: "A mattress, a bed for the second bedroom and wardrobes are not listed. Ask the owners if you need them.",
 };
 
@@ -83,7 +97,15 @@ export function factSheet(h = HOUSE) {
     `Rent: RM ${h.rent.toLocaleString("en-MY")} per month`,
     `Deposit: ${h.depositNote}`,
     `Legal fees: ${h.legalFees}`,
-    `Building: completed ${h.building.completed}, ${h.building.floors} floors, ${h.building.totalUnits} units`,
+    `Building: ${h.building.type}, ${h.building.tenure}, developer ${h.building.developer}, completed ${h.building.completed}, ${h.building.blocks} blocks, ${h.building.floors} floors, ${h.building.totalUnits} units`,
+    `Postcode: ${h.postcode}`,
+    `Nearby transport: ${h.neighbourhood.transit.join("; ")}`,
+    `Nearby shopping: ${h.neighbourhood.shopping.join("; ")}`,
+    `Nearby schools and universities: ${h.neighbourhood.schools.join("; ")}`,
+    `Nearby hospitals: ${h.neighbourhood.healthcare.join("; ")}`,
+    `Highways: ${h.neighbourhood.roads.join(", ")}`,
+    `Business areas: ${h.neighbourhood.business.join("; ")}`,
+    `Neighbourhood distances are approximate, from public property sources.`,
     `Facilities: ${h.facilities.join(", ")}`,
     `Amenities: ${h.amenities.join(", ")}`,
     `In the unit (from photos): ${h.inUnit.join("; ")}`,
@@ -96,4 +118,24 @@ export function factSheet(h = HOUSE) {
     `Tenant preference: ${h.tenantPreference}`,
     `Viewing: ${h.viewing}`,
   ].join("\n");
+}
+
+// Frequently asked questions — rendered on the page (crawlable), in FAQPage schema, and llms.txt.
+export function faqs(h = HOUSE) {
+  const rm = (n) => "RM " + Number(n).toLocaleString("en-MY");
+  return [
+    ["How much is the rent at this Rhythm Avenue USJ 19 unit?", `${rm(h.rent)} per month for the whole 2-bedroom, 1-bathroom apartment (${h.sizeSqft} sq ft, floor ${h.unitFloor}).`],
+    ["How much is the deposit?", `${h.depositNote} Legal fees for the tenancy agreement are charged separately.`],
+    ["Is it available now?", "Yes. The unit is ready for immediate occupation."],
+    ["What is the minimum tenancy?", `${h.minTenancy}.`],
+    ["Is it furnished?", `${h.furnishing}. It comes with a refrigerator, a king-size bed frame in the master bedroom, an L-shaped sofa, a TV console, a dining table with 2 chairs, a washing machine, an air-conditioner in the master bedroom, ceiling fans and a water heater. ${h.notIncluded}`],
+    ["Who pays the utilities?", `${h.utilitiesIncluded}. They are not included in the rent.`],
+    ["Is parking included?", `${h.parking}.`],
+    ["Are pets allowed?", h.petsAllowed ? "Yes." : "No, pets are not allowed."],
+    ["What is the nearest LRT station?", `${h.neighbourhood.transit[0]}. ${h.neighbourhood.transit[1]}.`],
+    ["What facilities does Rhythm Avenue have?", `${h.facilities.join(", ")}.`],
+    ["What is near Rhythm Avenue USJ 19?", `19 USJ City Mall is right next door. Other malls nearby include Main Place, One City, Summit USJ and Sunway Pyramid. Schools within about 1 km include SJK(T) Tun Sambanthan, SK Dato' Onn Jaafar and SJK(C) Tun Tan Cheng Lock. Highways: ${h.neighbourhood.roads.join(", ")}.`],
+    ["Who can rent this unit?", `The owners are looking for ${h.tenantPreference}. Cooking is allowed.`],
+    ["How do I arrange a viewing?", "Fill in the short enquiry form on this page. The owners reply on WhatsApp to arrange a viewing time."],
+  ];
 }

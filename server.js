@@ -6,6 +6,10 @@ import { readFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import pg from "pg";
 import { HOUSE, FORM_FIELDS, factSheet } from "./public/facts.js";
+import { renderPage, llmsTxt, sitemapXml } from "./seo.js";
+
+// IndexNow key (public by design: proves we own the host to Bing/Yandex/Seznam/Naver).
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY || "7c3e9a51f0b24d6e8a1c5f92b7d40e63";
 
 const PORT = Number(process.env.PORT || 3000);
 const AI_MODEL = process.env.AI_MODEL || "claude-haiku-4-5";
@@ -80,22 +84,36 @@ app.use("*", async (c, next) => {
 
 app.get("/healthz", (c) => c.text("ok"));
 
+// One canonical host for SEO: 301 the Railway default domain to PUBLIC_URL (keeps /healthz and /api working).
+app.use("*", async (c, next) => {
+  const host = (c.req.header("x-forwarded-host") || c.req.header("host") || "").toLowerCase();
+  const p = c.req.path;
+  if (process.env.PUBLIC_URL && host.endsWith(".up.railway.app") && p !== "/healthz" && !p.startsWith("/api/") && c.req.method === "GET") {
+    const u = new URL(c.req.url);
+    return c.redirect(process.env.PUBLIC_URL.replace(/\/$/, "") + p + u.search, 301);
+  }
+  await next();
+});
+
 // Crawlers (Meta/Threads/Instagram, WhatsApp, Google) check these before building link previews
 app.get("/robots.txt", (c) => {
   c.header("Cache-Control", "public, max-age=3600");
-  return c.text(`User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${siteUrl(c)}/sitemap.xml\n`);
+  const ai = ["Googlebot", "Bingbot", "Google-Extended", "GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-SearchBot", "Claude-User", "PerplexityBot", "Perplexity-User", "Applebot", "Applebot-Extended", "DuckAssistBot", "facebookexternalhit", "meta-externalagent"];
+  return c.text(`User-agent: *\nAllow: /\nDisallow: /api/\n\n` + ai.map((b) => `User-agent: ${b}\nAllow: /\nDisallow: /api/\n`).join("\n") + `\nSitemap: ${siteUrl(c)}/sitemap.xml\n`);
 });
 app.get("/sitemap.xml", (c) => {
   c.header("Content-Type", "application/xml; charset=utf-8");
-  return c.body(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${siteUrl(c)}/</loc><changefreq>weekly</changefreq></url></urlset>\n`);
+  return c.body(sitemapXml(siteUrl(c)));
 });
 app.get("/favicon.ico", (c) => c.redirect("/og.jpg?v=2", 302));
+app.get("/llms.txt", (c) => { c.header("Cache-Control", "public, max-age=3600"); return c.text(llmsTxt(siteUrl(c))); });
+app.get(`/${INDEXNOW_KEY}.txt`, (c) => c.text(INDEXNOW_KEY));
 
 // index.html with share-link URLs filled in for whatever domain serves it
 const indexTpl = await readFile(new URL("./public/index.html", import.meta.url), "utf8");
 const renderIndex = (c) => {
   c.header("Cache-Control", "public, max-age=300");
-  return c.html(indexTpl.replaceAll("https://rhythm-avenue-usj19.pages.dev", siteUrl(c)));
+  return c.html(renderPage(indexTpl, siteUrl(c)));
 };
 app.get("/", renderIndex);
 app.get("/index.html", renderIndex);
@@ -223,6 +241,22 @@ RULES
 
 /* ---------------- start ---------------- */
 await migrate().catch((e) => { console.error("migrate_failed", e.message); });
+
+// Tell Bing (and IndexNow partners) the page changed on every deploy. Google uses the sitemap instead.
+async function pingIndexNow() {
+  const site = (process.env.PUBLIC_URL || "").replace(/\/$/, "");
+  if (!site.startsWith("https://")) return;
+  try {
+    const host = new URL(site).host;
+    const res = await fetch("https://api.indexnow.org/indexnow", {
+      method: "POST", signal: AbortSignal.timeout(15000),
+      headers: { "content-type": "application/json; charset=utf-8" },
+      body: JSON.stringify({ host, key: INDEXNOW_KEY, keyLocation: `${site}/${INDEXNOW_KEY}.txt`, urlList: [`${site}/`, `${site}/llms.txt`] }),
+    });
+    console.log("indexnow", res.status);
+  } catch (e) { console.error("indexnow_failed", e?.message); }
+}
+setTimeout(pingIndexNow, 30000).unref();
 const server = serve({ fetch: app.fetch, port: PORT, hostname: process.env.HOST || "0.0.0.0" }, () => console.log(`listening on ${PORT}`));
 const shutdown = () => { server.close(); db?.end(); setTimeout(() => process.exit(0), 3000).unref(); };
 process.on("SIGTERM", shutdown); process.on("SIGINT", shutdown);
