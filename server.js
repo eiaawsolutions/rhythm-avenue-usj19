@@ -44,7 +44,7 @@ const forwardPending = db
       send: (row) => sendEnquiryEmail({ id: row.id, fields: rowToFields(row), submittedAt: row.created_at, attempt: row.email_attempts }),
     })
   : null;
-const runForwarder = () => forwardPending?.()
+const runForwarder = (opts) => forwardPending?.(opts)
   .then((r) => { if (r.sent || r.failed) console.log("forwarder", JSON.stringify(r)); })
   .catch((e) => console.error("forwarder_failed", e?.message));
 
@@ -230,9 +230,10 @@ console.log("mail_config", JSON.stringify({
   recipients: recipients().length,
   outbox: Boolean(forwardPending),
 }));
-// Forward anything still pending (incl. enquiries from before the outbox existed), then keep retrying.
-setTimeout(runForwarder, 5000).unref();
-setInterval(runForwarder, 5 * 60 * 1000).unref();
+// On boot, retry everything still pending regardless of backoff (a deploy is when config gets fixed),
+// then keep retrying on the normal backoff schedule.
+setTimeout(() => runForwarder({ retryAll: true }), 5000).unref();
+setInterval(() => runForwarder(), 5 * 60 * 1000).unref();
 
 // Tell Bing (and IndexNow partners) the page changed on every deploy. Google uses the sitemap instead.
 async function pingIndexNow() {

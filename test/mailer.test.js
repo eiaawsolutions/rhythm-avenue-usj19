@@ -92,6 +92,35 @@ test("already on the shared sender to the admin only → no pointless second att
   assert.equal(f.calls[0].body.from, FALLBACK_FROM);
 });
 
+test("a key from someone else's Resend account is reported as RESEND_WRONG_ACCOUNT", async () => {
+  const f = fakeFetch(
+    { status: 403, body: { message: "The eiaawsolutions.com domain is not verified." } },
+    { status: 403, body: { message: "You can only send testing emails to your own email address (admin@nurengroup.com). To send emails to other recipients, please verify a domain" } },
+  );
+  await assert.rejects(
+    sendEnquiryEmail(enquiry(), { env: { RESEND_API_KEY: "k", EMAIL_FROM: "a@eiaawsolutions.com" }, fetchImpl: f }),
+    (e) => e.code === "RESEND_WRONG_ACCOUNT" && e.owner === "admin@nurengroup.com",
+  );
+});
+
+test("wrong account is detected on the first try when already on the shared sender", async () => {
+  const f = fakeFetch({ status: 403, body: { message: "You can only send testing emails to your own email address (Admin@NurenGroup.com)." } });
+  await assert.rejects(
+    sendEnquiryEmail(enquiry(), { env: { RESEND_API_KEY: "k" }, fetchImpl: f }),
+    (e) => e.code === "RESEND_WRONG_ACCOUNT" && e.owner === "admin@nurengroup.com",
+  );
+  assert.equal(f.calls.length, 1);
+});
+
+test("own-address 403 naming the admin inbox is not a wrong-account error", async () => {
+  const f = fakeFetch(
+    { status: 403, body: { message: `You can only send testing emails to your own email address (${ADMIN_EMAIL}).` } },
+    { status: 200, body: { id: "re_3" } },
+  );
+  const r = await sendEnquiryEmail(enquiry(), { env: { RESEND_API_KEY: "k", NOTIFY_EMAIL: "owner@x.com" }, fetchImpl: f });
+  assert.equal(r.via, "fallback");
+});
+
 test("missing API key throws before any network call", async () => {
   const f = fakeFetch();
   await assert.rejects(sendEnquiryEmail(enquiry(), { env: {}, fetchImpl: f }), /RESEND_API_KEY not set/);

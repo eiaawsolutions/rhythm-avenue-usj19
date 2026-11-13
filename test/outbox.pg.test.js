@@ -37,23 +37,32 @@ test("outbox SQL on real Postgres", { skip: !url && "TEST_DATABASE_URL not set" 
   });
 
   await t.test("claim takes the oldest pending row and backs off after a failure", async () => {
-    let { rows } = await db.query(CLAIM_SQL);
+    let { rows } = await db.query(CLAIM_SQL, [null]);
     assert.equal(rows[0].id, ids[0]);
     assert.equal(rows[0].email_attempts, 1);
     assert.equal(rows[0].move_in, "2026-12-01");
     await db.query(MARK_FAILED_SQL, [ids[0], "resend 403: nope"]);
-    ({ rows } = await db.query(CLAIM_SQL));
+    ({ rows } = await db.query(CLAIM_SQL, [null]));
     assert.equal(rows.length, 0, "a just-failed row must wait for its backoff");
     await db.query("UPDATE enquiries SET email_last_try = now() - interval '6 minutes' WHERE id = $1", [ids[0]]);
-    ({ rows } = await db.query(CLAIM_SQL));
+    ({ rows } = await db.query(CLAIM_SQL, [null]));
     assert.equal(rows[0]?.id, ids[0], "eligible again once the backoff has passed");
     assert.equal(rows[0].email_attempts, 2);
+  });
+
+  await t.test("a retryAll (boot) run ignores backoff for rows tried before it, exactly once per run", async () => {
+    await db.query("UPDATE enquiries SET email_attempts = 5, email_last_try = now() - interval '2 minutes' WHERE id = $1", [ids[0]]);
+    let fails = 0;
+    const forward = createForwarder({ db, send: async () => { fails++; throw new Error("resend 500: still down"); }, log: silent, sleep: async () => {} });
+    assert.deepEqual(await forward(), { sent: 0, failed: 0 }, "not due under normal backoff (25 min)");
+    assert.deepEqual(await forward({ retryAll: true }), { sent: 0, failed: 1 }, "retried immediately, and not re-claimed within the same run");
+    assert.equal(fails, 1);
   });
 
   await t.test("a sent row is never claimed again", async () => {
     await db.query(MARK_SENT_SQL, [ids[0], "re_1"]);
     await db.query("UPDATE enquiries SET email_last_try = now() - interval '1 day' WHERE id = $1", [ids[0]]);
-    const { rows } = await db.query(CLAIM_SQL);
+    const { rows } = await db.query(CLAIM_SQL, [new Date()]);
     assert.equal(rows.length, 0);
     const { rows: [r] } = await db.query("SELECT email_id, email_error, emailed_at IS NOT NULL AS sent FROM enquiries WHERE id = $1", [ids[0]]);
     assert.deepEqual(r, { email_id: "re_1", email_error: null, sent: true });
@@ -62,7 +71,7 @@ test("outbox SQL on real Postgres", { skip: !url && "TEST_DATABASE_URL not set" 
   await t.test("concurrent claims never hand out the same row", async () => {
     await insert(db, ids[1]);
     await insert(db, ids[2]);
-    const [a, b] = await Promise.all([db.query(CLAIM_SQL), db.query(CLAIM_SQL)]);
+    const [a, b] = await Promise.all([db.query(CLAIM_SQL, [null]), db.query(CLAIM_SQL, [null])]);
     const got = [a.rows[0]?.id, b.rows[0]?.id].filter(Boolean);
     assert.equal(new Set(got).size, got.length);
   });

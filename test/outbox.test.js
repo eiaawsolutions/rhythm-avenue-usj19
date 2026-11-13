@@ -1,23 +1,48 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createForwarder, rowToFields, CLAIM_SQL, MARK_SENT_SQL, MARK_FAILED_SQL } from "../outbox.js";
+import { createForwarder, rowToFields, CLAIM_SQL, MARK_SENT_SQL, MARK_FAILED_SQL, RUN_START_SQL } from "../outbox.js";
 
 const silent = { log() {}, error() {} };
 const noSleep = async () => {};
+const DB_NOW = new Date("2026-11-13T08:40:00Z");
 
 // Minimal stand-in for pg.Pool: CLAIM_SQL hands out queued rows; every other statement is recorded.
 function fakeDb(rows) {
   const queue = [...rows];
   const writes = [];
+  const claims = [];
   return {
-    writes,
+    writes, claims, queue,
     async query(sql, params) {
-      if (sql === CLAIM_SQL) return { rows: queue.length ? [queue.shift()] : [] };
+      if (sql === RUN_START_SQL) return { rows: [{ t: DB_NOW }] };
+      if (sql === CLAIM_SQL) { claims.push(params); return { rows: queue.length ? [queue.shift()] : [] }; }
       writes.push({ sql, params });
       return { rows: [] };
     },
   };
 }
+
+test("a normal run respects backoff; a retryAll run passes the DB's own start time as cutoff", async () => {
+  const db = fakeDb([]);
+  const forward = createForwarder({ db, send: async () => ({}), log: silent, sleep: noSleep });
+  await forward();
+  await forward({ retryAll: true });
+  assert.deepEqual(db.claims, [[null], [DB_NOW]]);
+});
+
+test("a key from the wrong Resend account pauses all sending in this process", async () => {
+  const db = fakeDb([{ id: "a" }, { id: "b" }]);
+  const wrong = Object.assign(new Error("RESEND_API_KEY belongs to the Resend account of x@y.com"), { code: "RESEND_WRONG_ACCOUNT" });
+  let sends = 0;
+  const forward = createForwarder({ db, send: async () => { sends++; throw wrong; }, log: silent, sleep: noSleep });
+  const r = await forward();
+  assert.equal(r.sent, 0);
+  assert.equal(r.failed, 1);
+  assert.match(r.paused, /wrong|belongs to/i);
+  assert.deepEqual(await forward(), { paused: r.paused });
+  assert.equal(sends, 1, "no further enquiry data is sent to the wrong account");
+  assert.equal(db.queue.length, 1, "row b stays pending for after the key is fixed");
+});
 
 test("forwards every pending row and records success and failure separately", async () => {
   const db = fakeDb([{ id: "a" }, { id: "b" }]);

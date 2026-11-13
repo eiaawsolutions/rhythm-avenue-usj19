@@ -49,6 +49,22 @@ async function post(fetchImpl, apiKey, idempotencyKey, payload) {
   return { ok: res.ok, status: res.status, id: body.id, error: (body.message || raw).slice(0, 200) };
 }
 
+// Resend's shared sender reports whose account the key belongs to: "...your own email address (owner@x)".
+const accountOwner = (error) => /own email address \(([^)\s]+)\)/i.exec(error)?.[1]?.toLowerCase();
+
+/** The API key belongs to someone else's Resend account; retrying would only hand them applicant data. */
+export class WrongResendAccountError extends Error {
+  constructor(owner) {
+    super(`RESEND_API_KEY belongs to the Resend account of ${owner}, not ${ADMIN_EMAIL}; sending paused until the key is replaced`);
+    this.code = "RESEND_WRONG_ACCOUNT";
+    this.owner = owner;
+  }
+}
+function assertOwnAccount(res) {
+  const owner = res.status === 403 ? accountOwner(res.error) : undefined;
+  if (owner && owner !== ADMIN_EMAIL) throw new WrongResendAccountError(owner);
+}
+
 /** Sends one enquiry. Resolves { emailId, via: "primary" | "fallback" }; throws when nothing was sent. */
 export async function sendEnquiryEmail({ id, fields, submittedAt, attempt = 1 }, { env = process.env, fetchImpl = fetch } = {}) {
   if (!env.RESEND_API_KEY) throw new Error("RESEND_API_KEY not set");
@@ -58,11 +74,13 @@ export async function sendEnquiryEmail({ id, fields, submittedAt, attempt = 1 },
 
   const primary = await post(fetchImpl, env.RESEND_API_KEY, `${id}-${attempt}`, { from, to, ...msg });
   if (primary.ok) return { emailId: primary.id, via: "primary" };
+  assertOwnAccount(primary);
 
   const fallbackWouldDiffer = !(from === FALLBACK_FROM && to.length === 1 && to[0] === ADMIN_EMAIL);
   if (primary.status !== 403 || !fallbackWouldDiffer) throw new Error(`resend ${primary.status}: ${primary.error}`);
 
   const fb = await post(fetchImpl, env.RESEND_API_KEY, `${id}-${attempt}-fallback`, { from: FALLBACK_FROM, to: [ADMIN_EMAIL], ...msg });
   if (fb.ok) return { emailId: fb.id, via: "fallback", primaryError: primary.error };
+  assertOwnAccount(fb);
   throw new Error(`resend 403: ${primary.error}; fallback ${fb.status}: ${fb.error}`);
 }

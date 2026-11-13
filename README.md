@@ -37,7 +37,9 @@ FROM enquiries ORDER BY created_at DESC;
 Tenants also send their details to your WhatsApp in one tap after submitting.
 
 ### Enquiry emails (outbox)
-The `enquiries` table is the email queue. A row stays pending until `emailed_at` is set. New enquiries are emailed straight away. A failed send is retried with backoff (5 min per attempt, capped at 1 h) and never dropped. Anything still pending is retried on every boot and every 5 minutes. Check delivery with:
+The `enquiries` table is the email queue. A row stays pending until `emailed_at` is set. New enquiries are emailed straight away. A failed send is retried with backoff (5 min per attempt, capped at 1 h) and never dropped. Every deploy or restart retries everything still pending at once, ignoring backoff, so fixing a mail setting takes effect straight away.
+
+If the Resend key belongs to someone else's Resend account (Resend names the owner in its 403), sending **pauses** with `email_paused` in the log, so applicant data isn't handed to another account. Enquiries keep queueing and go out on the next deploy once `RESEND_API_KEY` points at EIAAW's account. Check delivery with:
 ```sql
 SELECT created_at, name, emailed_at, email_attempts, email_error FROM enquiries ORDER BY created_at DESC;
 ```
