@@ -7,6 +7,13 @@ import { createHash, randomUUID } from "node:crypto";
 import pg from "pg";
 import { HOUSE, FORM_FIELDS, factSheet } from "./public/facts.js";
 import { renderPage, llmsTxt, sitemapXml } from "./seo.js";
+import { resolveSecrets } from "./secrets.js";
+import { SCHEMA_SQL } from "./db.js";
+import { sendEnquiryEmail, recipients } from "./mailer.js";
+import { createForwarder, rowToFields } from "./outbox.js";
+
+// Resolve Infisical `secret://` handles before anything below reads process.env.
+await resolveSecrets(process.env);
 
 // IndexNow key (public by design: proves we own the host to Bing/Yandex/Seznam/Naver).
 const INDEXNOW_KEY = process.env.INDEXNOW_KEY || "7c3e9a51f0b24d6e8a1c5f92b7d40e63";
@@ -26,18 +33,20 @@ const db = process.env.DATABASE_URL
 
 async function migrate() {
   if (!db) return console.warn("DATABASE_URL not set – enquiries will not be stored");
-  await db.query(`
-    CREATE TABLE IF NOT EXISTS enquiries (
-      id uuid PRIMARY KEY, created_at timestamptz NOT NULL DEFAULT now(),
-      name text NOT NULL, nationality text NOT NULL, race text NOT NULL, religion text NOT NULL,
-      occupants int NOT NULL, relation text NOT NULL, occupation text NOT NULL, pets text NOT NULL,
-      duration text NOT NULL, move_in text NOT NULL, budget text NOT NULL, phone text NOT NULL,
-      consent_at timestamptz NOT NULL, status text NOT NULL DEFAULT 'new');
-    CREATE INDEX IF NOT EXISTS idx_enquiries_created ON enquiries (created_at);
-    CREATE TABLE IF NOT EXISTS rate_limits (k text PRIMARY KEY, n int NOT NULL, day date NOT NULL DEFAULT current_date);
-    DELETE FROM rate_limits WHERE day < current_date - 1;`);
+  await db.query(SCHEMA_SQL);
   console.log("db ready");
 }
+
+// Emails every enquiry not yet emailed (new ones immediately, failed ones with backoff).
+const forwardPending = db
+  ? createForwarder({
+      db,
+      send: (row) => sendEnquiryEmail({ id: row.id, fields: rowToFields(row), submittedAt: row.created_at, attempt: row.email_attempts }),
+    })
+  : null;
+const runForwarder = () => forwardPending?.()
+  .then((r) => { if (r.sent || r.failed) console.log("forwarder", JSON.stringify(r)); })
+  .catch((e) => console.error("forwarder_failed", e?.message));
 
 /* ---------------- helpers ---------------- */
 const mem = new Map(); // fallback rate-limit store when no DB
@@ -174,7 +183,12 @@ app.post("/api/enquiry", async (c) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,now())`,
       [id, d.name, d.nationality, d.race, d.religion, occ, d.relation, d.occupation, d.pets, d.duration, d.moveIn, d.budget, d.phone]);
   }
-  sendEnquiryEmail(id, d).catch((e) => console.error("email_failed", e?.message));
+  if (forwardPending) runForwarder(); // row is stored as pending; the outbox emails it and retries on failure
+  else {
+    sendEnquiryEmail({ id, fields: d, submittedAt: new Date() })
+      .then((r) => console.log("enquiry_emailed", id, `via=${r.via}`))
+      .catch((e) => console.error("email_failed", id, e?.message));
+  }
   if (process.env.NOTIFY_WEBHOOK_URL) {
     fetch(process.env.NOTIFY_WEBHOOK_URL, {
       method: "POST",
@@ -191,37 +205,6 @@ app.all("/api/*", (c) => c.json({ error: "not_found" }, 404));
 app.use("/img/*", async (c, next) => { await next(); c.header("Cache-Control", "public, max-age=604800"); });
 app.use("*", serveStatic({ root: "./public" }));
 app.notFound((c) => c.redirect("/", 302));
-
-/* ---------------- enquiry email (Resend) ---------------- */
-const esc = (v) => String(v).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
-async function sendEnquiryEmail(id, d) {
-  if (!process.env.RESEND_API_KEY) return console.warn("RESEND_API_KEY not set – enquiry email skipped");
-  const to = (process.env.NOTIFY_EMAIL || "eiaawsolutions@gmail.com").split(",").map((s) => s.trim()).filter(Boolean);
-  const rows = FORM_FIELDS.map((f) => [f.label, d[f.id]]);
-  const waDigits = d.phone.replace(/\D/g, "").replace(/^0/, "60");
-  const html = `<div style="font-family:Arial,sans-serif;max-width:560px">
-    <h2 style="margin:0 0 4px">New rental enquiry</h2>
-    <p style="margin:0 0 16px;color:#555">${esc(HOUSE.title)} · RM ${HOUSE.rent.toLocaleString("en-MY")}/month</p>
-    <table cellpadding="8" style="border-collapse:collapse;width:100%;font-size:14px">
-      ${rows.map(([k, v]) => `<tr><td style="border-bottom:1px solid #eee;color:#555;width:45%">${esc(k)}</td><td style="border-bottom:1px solid #eee"><b>${esc(v)}</b></td></tr>`).join("")}
-    </table>
-    <p style="margin:20px 0"><a href="https://wa.me/${waDigits}" style="background:#25d366;color:#062b14;padding:12px 18px;border-radius:24px;text-decoration:none;font-weight:bold">Reply on WhatsApp</a></p>
-    <p style="color:#888;font-size:12px">Ref ${id}. The applicant consented to the collection of these details under PDPA 2010, for this tenancy only.</p></div>`;
-  const text = rows.map(([k, v]) => `${k}: ${v}`).join("\n") + `\n\nWhatsApp: https://wa.me/${waDigits}\nRef: ${id}`;
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    signal: AbortSignal.timeout(15000),
-    headers: { "content-type": "application/json", authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Idempotency-Key": id },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM || "Rhythm Avenue Enquiries <onboarding@resend.dev>",
-      to,
-      subject: `New enquiry: ${d.name} – ${HOUSE.title} (move-in ${d.moveIn})`,
-      html, text,
-    }),
-  });
-  if (!res.ok) throw new Error(`resend ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  console.log("enquiry_emailed", id);
-}
 
 /* ---------------- AI system prompt ---------------- */
 const SYSTEM = `You are the friendly rental assistant for one apartment unit listed for rent in Malaysia.
@@ -241,6 +224,15 @@ RULES
 
 /* ---------------- start ---------------- */
 await migrate().catch((e) => { console.error("migrate_failed", e.message); });
+console.log("mail_config", JSON.stringify({
+  resend_key: Boolean(process.env.RESEND_API_KEY),
+  from_domain: (process.env.EMAIL_FROM || "onboarding@resend.dev").replace(/.*@|>.*/g, ""),
+  recipients: recipients().length,
+  outbox: Boolean(forwardPending),
+}));
+// Forward anything still pending (incl. enquiries from before the outbox existed), then keep retrying.
+setTimeout(runForwarder, 5000).unref();
+setInterval(runForwarder, 5 * 60 * 1000).unref();
 
 // Tell Bing (and IndexNow partners) the page changed on every deploy. Google uses the sitemap instead.
 async function pingIndexNow() {

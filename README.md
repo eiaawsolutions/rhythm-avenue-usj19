@@ -15,10 +15,11 @@ A one-page rental listing with an AI chat that answers only from the house facts
    | `ANTHROPIC_API_KEY` | your key from console.anthropic.com (the chat falls back to built-in answers without it) |
    | `AI_MODEL` | optional, default `claude-haiku-4-5` |
    | `PUBLIC_URL` | optional, e.g. `https://rent.eiaawsolutions.com` once a custom domain is added |
-   | `RESEND_API_KEY` | emails each enquiry (from Infisical) |
-   | `NOTIFY_EMAIL` | recipient(s), comma-separated; default `eiaawsolutions@gmail.com` |
-   | `EMAIL_FROM` | optional sender on a Resend-verified domain, e.g. `Rhythm Avenue <rent@eiaawsolutions.com>` (default `onboarding@resend.dev` only delivers to the Resend account owner's address) |
+   | `RESEND_API_KEY` | emails each enquiry. Value lives in Infisical; Railway holds the `secret://` handle (see `.env.example`) |
+   | `NOTIFY_EMAIL` | optional **extra** recipients, comma-separated. `eiaawsolutions@gmail.com` always receives every enquiry |
+   | `EMAIL_FROM` | optional branded sender on a Resend-verified domain, e.g. `Rhythm Avenue <rent@eiaawsolutions.com>`. If Resend rejects it (403, e.g. domain not verified), the email is re-sent from `onboarding@resend.dev` to `eiaawsolutions@gmail.com` only, and the log shows `via=fallback` |
    | `NOTIFY_WEBHOOK_URL` / `NOTIFY_WEBHOOK_SECRET` | optional: an n8n webhook that alerts you on each enquiry |
+   | `INFISICAL_RESOLVER_ENABLED`, `INFISICAL_APP_CLIENT_ID`, `INFISICAL_APP_CLIENT_SECRET`, `INFISICAL_PROJECT_ID` | Infisical bootstrap creds (the only raw secrets in Railway). With these set, `secret://` handles in `RESEND_API_KEY`, `ANTHROPIC_API_KEY` and `NOTIFY_WEBHOOK_SECRET` are resolved at boot (`secrets.js`) |
 4. Web service → **Settings → Networking → Generate Domain** (or add a custom domain)
 5. After it deploys, open `/healthz`. It should return `ok`.
 
@@ -35,6 +36,13 @@ FROM enquiries ORDER BY created_at DESC;
 ```
 Tenants also send their details to your WhatsApp in one tap after submitting.
 
+### Enquiry emails (outbox)
+The `enquiries` table is the email queue. A row stays pending until `emailed_at` is set. New enquiries are emailed straight away. A failed send is retried with backoff (5 min per attempt, capped at 1 h) and never dropped. Anything still pending is retried on every boot and every 5 minutes. Check delivery with:
+```sql
+SELECT created_at, name, emailed_at, email_attempts, email_error FROM enquiries ORDER BY created_at DESC;
+```
+Logs: `enquiry_emailed <id> via=primary|fallback` on success, and `email_failed <id> attempt=N <reason>` on failure.
+
 ## Privacy (PDPA 2010, amended 2024)
 - Religion is sensitive personal data, so the form requires an explicit consent tick, and `consent_at` is stored with each enquiry.
 - No raw IP addresses are stored; rate limiting uses a daily-salted hash.
@@ -48,6 +56,9 @@ Strict CSP and HSTS, same-origin check on the API, honeypot on the form, rate li
 ```bash
 npm install
 DATABASE_URL=postgres://... ANTHROPIC_API_KEY=... npm run dev   # http://localhost:3000
+npm test                                                         # unit tests
+docker run -d --rm --name ra-test-pg -e POSTGRES_PASSWORD=test -e POSTGRES_DB=ra_test -p 55432:5432 postgres:18-alpine
+TEST_DATABASE_URL=postgres://postgres:test@localhost:55432/ra_test npm test   # + outbox SQL against real Postgres (drops tables)
 ```
 
 ## SEO / GEO / AEO

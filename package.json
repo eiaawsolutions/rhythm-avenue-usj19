@@ -6,7 +6,8 @@
   "description": "Rhythm Avenue USJ19 rental site with AI assistant and enquiry form",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "node --test"
   },
   "engines": { "node": ">=22" },
   "dependencies": {
